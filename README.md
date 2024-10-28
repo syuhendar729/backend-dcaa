@@ -5,7 +5,7 @@
 | id | Integer | primary_key |
 | username | String | unique |
 | email | String | unique |
-| password | String |  |
+| password | String | <hash> |
 | profile_picture | String |  |
 | created_at | Datetime |  |
 | updated_at | Datetime |  |
@@ -169,31 +169,32 @@ Endpoint :  `GET /users`
 
 Authorization: `Bearer Token`
 
-Request Body `form-data`:
-
-| key | type | value |
-| --- | --- | --- |
-| old_password | text | oda123 |
-| new_password | text | 123oda |
-
 Response Body Success :
 
 ```json
 {
     "data": {
         "email": "oda@mail.com",
-        "id": 16,
+        "id": 1,
         "profile_picture": null,
-        "username": "oda2"
+        "username": "oda"
     },
     "message": "Success get detail user."
 }
+```
 
+Response Body Error :
+
+```json
+{
+    "data": [],
+    "message": "Failed get user detail. User not found."
+}
 ```
 
 ## 5. Reset Password User Data API
 
-Endpoint :  `PATCH /users`
+Endpoint :  `PUT /users`
 
 Authorization: `Bearer Token`
 
@@ -213,9 +214,25 @@ Response Body Success :
 }
 ```
 
+Response Body Error :
+
+```json
+// if same old and new password
+{
+    "data": [],
+    "message": "Failed update password. Can't same old and new password."
+}
+
+// if wrong password
+{
+    "data": [],
+    "message": "Failed update password. Wrong old password."
+}
+```
+
 ## 6. Logout User API
 
-Endpoint :  `PATCH /logout`
+Endpoint :  `POST /logout`
 
 Authorization: `Bearer Token`
 
@@ -235,18 +252,6 @@ Response Body Success :
 }
 ```
 
-Error Response Umum:
-
-```json
-// token in blacklist
-{
-    "msg": "Token has been revoked"
-}
-{
-    "msg": "Invalid header padding"
-}
-```
-
 ## 6. Delete User API
 
 Endpoint :  `DELETE /users`
@@ -262,11 +267,28 @@ Response Body Success :
 }
 ```
 
-Error Response Umum:
+Response Body Error :
 
 ```json
 {
     "data": [],
-    "message": "Failed delete user. User not found."
+    "message": "Failed logout user. User not found."
+}
+```
+
+Error Response Umum:
+
+```json
+// missing authorization
+{
+    "msg": "Missing Authorization Header"
+}
+// token in blacklist
+{
+    "msg": "Token has been revoked"
+}
+//
+{
+    "msg": "Invalid header padding"
 }
 ```
