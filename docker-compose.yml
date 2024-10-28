@@ -1,0 +1,39 @@
+services:
+  backend_dcaa:
+    build:
+      context: .
+    container_name: backend_dcaa
+    environment:
+      - DB_HOST=learn-mysql
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - URL_HOST=${URL_HOST}
+      - STATIC_FOLDER=${STATIC_FOLDER}
+    volumes:
+      - static_files:/app/static
+    ports:
+      - "5010:5010"  # Port untuk backend (opsional, bisa ditutup karena diakses melalui NGINX)
+    networks:
+      - network_dcaa_app  # Menghubungkan backend ke jaringan
+  
+  nginx:
+    image: nginx:latest
+    container_name: nginx_dcaa
+    ports:
+      - "81:81"       # Expose port 80 untuk mengakses NGINX dari luar
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf  # Gunakan konfigurasi NGINX
+      - static_files:/usr/share/nginx/html/static
+    depends_on:
+      - backend_dcaa
+    networks:
+      - network_dcaa_app  # Menghubungkan nginx ke jaringan
+
+networks:
+  network_dcaa_app:
+    external: true  # Menggunakan jaringan yang telah dibuat
+
+volumes:
+  static_files: 
