@@ -10,6 +10,13 @@
 | created_at | Datetime |  |
 | updated_at | Datetime |  |
 
+| field | type | additional |
+| --- | --- | --- |
+| id | Integer | primary_key |
+| user_id | Int | foreign_key |
+| token | String |  |
+| expired_at | Datetime |  |
+
 # API Docs
 
 ## 1. Register User API
@@ -273,6 +280,23 @@ Response Body Error :
 {
     "data": [],
     "message": "Failed logout user. User not found."
+}
+```
+
+## 7. Get URL Profile Image
+
+Endpoint :  `GET /get-profile`
+
+Authorization: `Bearer Token`
+
+Response Body Success :
+
+```json
+{
+    "data": {
+        "url_image": "http://localhost:80/static/profile.png"
+    },
+    "message": "Success get url profile image."
 }
 ```
 

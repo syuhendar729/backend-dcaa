@@ -15,9 +15,17 @@ def badRequest(values, message):
 
     return make_response(jsonify(res)), 400
 
-def serverError(values, message):
+def notAuthorized(values, message):
     res = {
         'data' : values,
+        'message': message
+    }
+
+    return make_response(jsonify(res)), 401
+
+def serverError(values, message):
+    res = {
+        'error_message' : values,
         'message': message
     }
 

@@ -8,8 +8,7 @@ services:
       - DB_DATABASE=${DB_DATABASE}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
-      - URL_HOST=${URL_HOST}
+      - URL_HOST=http://localhost:81
       - STATIC_FOLDER=${STATIC_FOLDER}
     volumes:
       - static_files:/app/static

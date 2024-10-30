@@ -1,11 +1,12 @@
-from app.model.user import User
-from app import response, db, blacklist
+from app.model.user import User, Token
+from app import response, db
 from flask import request
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt
 from werkzeug.utils import secure_filename
-import datetime
+from datetime import datetime, timedelta, timezone
 from config import Config
 import os
+import secrets
 
 
 def get_all_user():
@@ -17,15 +18,14 @@ def get_all_user():
     except Exception as e:
         print(e)
 
-def get_detail_user(id):
+def get_detail_user(current_user):
     try:
-        user = User.query.filter_by(id=id).first()
-        data = singleObject(user)
+        data = singleObject(current_user)
         print(data)
         return response.success(data, 'Success get detail user.')
     except Exception as e:
         print(e)
-        return response.serverError([], 'Failed get user. Internal Server Error.')
+        return response.serverError(f'{e}', 'Failed get user. Internal Server Error.')
 
 def create_user():
     try:
@@ -56,7 +56,7 @@ def create_user():
         return response.success( { email: email, username: username }, 'Success create user data.')
     except Exception as e:
         print(e)
-        return response.serverError([], 'Failed create user. Internal Server Error.')
+        return response.serverError(f'{e}', 'Failed create user. Internal Server Error.')
 
 def update_user(id):
     try:
@@ -98,7 +98,7 @@ def update_user(id):
         return response.success(input, 'Success update user data.')
     except Exception as e:
         print(e)
-        return response.serverError([], 'Failed update user. Internal Server Error.')
+        return response.serverError(f'{e}', 'Failed update user. Internal Server Error.')
 
 def delete_user(id):
     try:
@@ -112,6 +112,7 @@ def delete_user(id):
         return response.success(id, 'Success delete user.')
     except Exception as e:
         print(e)
+        return response.serverError(f'{e}', 'Failed delete user. Internal Server Error.')
 
 def login_user():
     try:
@@ -122,46 +123,30 @@ def login_user():
         if not user:
             return response.badRequest([], 'Failed login. User not registered.')
         if not user.check_password(password):
-        #  if user.password != password:
             return response.badRequest([], 'Failed login. Wrong password.')
 
         data = singleObject(user)
-        expires = datetime.timedelta(days=1)
-        expires_refresh = datetime.timedelta(days=30)
 
-        access_token = create_access_token(data, fresh=True, expires_delta=expires)
-        refresh_token = create_refresh_token(data, expires_delta=expires_refresh)
+        access_token = generate_token(user.id)
 
         return response.success({
             "data" : data,
             "access_token" : access_token,
-            "refresh_token" : refresh_token,
         }, "Success login!")
     except Exception as e:
         print(e)
-        return response.serverError([], 'Failed login user. Internal Server Error.')
+        return response.serverError(f'{e}', 'Failed login user. Internal Server Error.')
 
-def logout_user():
+def logout_user(token):
     try:
-        jti = get_jwt()["jti"]
-        print(f'my jti: {jti}')
-        blacklist.add(jti)
+        token = Token.query.filter_by(token=token).first()
+        db.session.delete(token)
+        db.session.commit()
         return response.success([], 'Success logout user.')
     except Exception as e:
         print(e)
-        return response.serverError([], 'Failed logout user. Internal Server Error.')
+        return response.serverError(f'{e}', 'Failed logout user. Internal Server Error.')
 
-def upload_image(file):
-    filename = secure_filename(file.filename)
-    if filename.endswith(('.png', '.jpg', '.jpeg')):
-        filepath = os.path.join(Config.STATIC_FOLDER, filename)
-        file.save(filepath)  # Simpan file di folder static Flask
-
-        file_url = f"/static/{filename}"
-        return file_url
-    else:
-        raise Exception("Invalid file type. Only PNG, JPG, or JPEG files are allowed.")
-        #  return response.badRequest([], "Invalid file type. Only PNG, JPG, or JPEG files are allowed.")
 
 def reset_password(id):
     try:
@@ -177,13 +162,44 @@ def reset_password(id):
         return response.success([], 'Success update password.')
     except Exception as e:
         print(e)
-        return response.serverError([], 'Failed update password. Internal server error.')
+        return response.serverError(f'{e}', 'Failed update password. Internal server error.')
 
+def get_url_image(id):
+    try:
+        user = User.query.filter_by(id=id).first()
+        if user.profile_picture is None:
+            url_image = 'null'
+        else:
+            url_image = f'{Config.URL_HOST}{user.profile_picture}'
+        return response.success({ 'url_image': url_image }, 'Success get url profile image.')
+    except Exception as e:
+        print(e)
+        return response.serverError([], 'Failed get url image. Internal server error.')
 
 
         
 
 # =========================================== HELPER ===========================================
+def generate_token(user_id):
+    token = secrets.token_hex(32)  # Membuat token 64 karakter unik
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)  # Token berlaku selama 1 jam
+    new_token = Token(user_id=user_id, token=token, expires_at=expires_at)
+    db.session.add(new_token)
+    db.session.commit()
+    return token
+
+def upload_image(file):
+    filename = secure_filename(file.filename)
+    if filename.endswith(('.png', '.jpg', '.jpeg')):
+        filepath = os.path.join(Config.STATIC_FOLDER, filename)
+        file.save(filepath)  # Simpan file di folder static Flask
+
+        file_url = f"/static/{filename}"
+        return file_url
+    else:
+        raise Exception("Invalid file type. Only PNG, JPG, or JPEG files are allowed.")
+
+
 
 def formatarray(datas):
     array = []

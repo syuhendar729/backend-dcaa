@@ -13,6 +13,8 @@ class User(db.Model):
     profile_picture = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    tokens = db.relationship('Token', backref='user', cascade="all, delete-orphan")
 
     # Hash password untuk keamanan
     def set_password(self, password):
@@ -25,3 +27,11 @@ class User(db.Model):
     # Fungsi untuk representasi user sebagai string
     def __repr__(self):
         return f'<User {self.username}>'
+
+# Model Token
+class Token(db.Model):
+    __tablename__ = 'tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
