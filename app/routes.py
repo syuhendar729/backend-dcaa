@@ -6,13 +6,13 @@ from flask import request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.validator.user_scheme import RegisterUserScheme, UpdateUserScheme, LoginUserScheme
 from marshmallow import ValidationError 
+from app.middleware.auth import token_required
 
 @app.route('/')
 def index():
     return response.success([], 'Welcome to Entry Task DCAA.')
 
 @app.route('/users', methods=['GET'])
-@jwt_required()
 def show_users():
     return UserController.get_all_user()
 
@@ -27,29 +27,27 @@ def create_user():
     return UserController.create_user()
 
 @app.route('/user', methods=['GET'])
-@jwt_required()
-def show_user_byid():
-    current_user = get_jwt_identity()
+@token_required
+def get_detail_user(current_user):
     print(current_user)
-    return UserController.get_detail_user(current_user.get('id'))
+    return UserController.get_detail_user(current_user)
 
 @app.route('/user', methods=['PATCH'])
-@jwt_required()
-def update_user():
-    current_user = get_jwt_identity()
+@token_required
+def update_user(current_user):
     data = request.form.to_dict()
     try:
         UpdateUserScheme().load(data)
     except ValidationError as err:
         print(err)
         return response.badRequest(err.messages, 'Validation failed.')
-    return UserController.update_user(current_user.get('id'))
+    return UserController.update_user(current_user.id)
+
 
 @app.route('/user', methods=['DELETE'])
-@jwt_required()
-def delete_user():
-    current_user = get_jwt_identity()
-    return UserController.delete_user(current_user.get('id'))
+@token_required
+def delete_user(current_user):
+    return UserController.delete_user(current_user.id)
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -62,25 +60,28 @@ def login_user():
     return UserController.login_user()
 
 @app.route('/logout', methods=['POST'])
-@jwt_required()
-def logout_user():
-    return UserController.logout_user()
+@token_required
+def logout_user(token):
+    return UserController.logout_user(token)
 
 @app.route('/reset-password', methods=['PUT'])
-@jwt_required()
-def reset_password():
+@token_required
+def reset_password(current_user):
     data = request.form.to_dict()
-    current_user = get_jwt_identity()
     try:
         ResetPasswordScheme().load(data)
     except ValidationError as err:
         print(err)
         return response.badRequest(err.messages, 'Validation failed.')
-    return UserController.reset_password(current_user.get('id'))
+    return UserController.reset_password(current_user.id)
 
 
-@app.route('/protect', methods=['GET'])
-@jwt_required()
-def protect():
-    current_user = get_jwt_identity()
-    return response.success(current_user, 'Success user authorized.')
+@app.route('/get-profile', methods=['GET'])
+@token_required
+def get_url_image(current_user):
+    return UserController.get_url_image(current_user.id)
+
+
+
+
+
